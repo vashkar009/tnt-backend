@@ -19,7 +19,7 @@ const provider =  new HDWalletProvider(mnemonic, rawToken?.InfuraNodeURL);
 var web3 = new Web3(provider);
 const signer = web3.eth.accounts.privateKeyToAccount(rawToken?.WalletPrivateKey);
 const contactList = new web3.eth.Contract(CONTACT_ABI, CONTACT_ADDRESS);
-return { contactList, signer };
+return { contactList, signer,web3 };
   };
 app.get("/", async (req, res) => {
  
@@ -55,12 +55,16 @@ app.post("/create", async(req, res) => {
 
 		app.use(express.json());
 		const tokenURI = JSON.stringify(req.body);
+		let nonce = await web3.eth.getTransactionCount(signer.address);
+		let gas = await web3.eth.estimateGas({from: signer.address});
 		try {
 		  const response = await contactList.methods.create(tokenURI)
 			.send({
-				from: signer.address,
-                gasLimit: 5000000,
-				gasPrice: 10000000000,
+				 from: signer.address,
+				  nonce   : web3.utils.toHex(nonce),
+				  gas   :   gas,
+				  value : 0,
+				  gasPrice :  web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
 			  })
 
 			  .once('sending', function(payload){ console.log(`Sending transaction ...`);
