@@ -9,11 +9,10 @@ var CONTACT_ADDRESS = require("./Address.json");
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 app.use(cors());
 app.use(express.json());
-
 const getConfig = (token) => {
 const tokenDecoded = decode(token);
 const rawToken = JSON.parse(tokenDecoded);
-console.log(rawToken);
+//console.log(rawToken);
 var mnemonic = rawToken?.WalletPrivateKey;
 const provider =  new HDWalletProvider(mnemonic, rawToken?.InfuraNodeURL);
 var web3 = new Web3(provider);
@@ -22,18 +21,9 @@ const contactList = new web3.eth.Contract(CONTACT_ABI, CONTACT_ADDRESS);
 return { contactList, signer,web3 };
   };
 app.get("/", async (req, res) => {
- 
-	try {
-
-		const str = '01/03/2022 0:00';
-		const [day,month,yearTime] = str.split('/');
-		const [year,Time] = yearTime.split(' ');
-
-		console.log(month); 
-		console.log(year); 
-	  
+ try {
 	  res.json({
-		message: "The api's is up and Running",
+		message: "The tnt-backend V2 api's is up and Running",
 		status: "true",
 	  });
 	} catch (error) {
@@ -51,20 +41,20 @@ app.post("/create", async(req, res) => {
 		{
 			return res.status(401).json({ message: "Missing Authorization Header" });
 		}
-	     const { contactList, signer } = getConfig(req.headers["app-config-token"]);
+	     const { contactList, signer,web3 } = getConfig(req.headers["app-config-token"]);
 
 		app.use(express.json());
 		const tokenURI = JSON.stringify(req.body);
-		let nonce = await web3.eth.getTransactionCount(signer.address);
+		let nounce = await web3.eth.getTransactionCount(signer.address);
 		let gas = await web3.eth.estimateGas({from: signer.address});
 		try {
 		  const response = await contactList.methods.create(tokenURI)
 			.send({
-				 from: signer.address,
-				  nonce   : web3.utils.toHex(nonce),
-				  gas   :   gas,
-				  value : 0,
-				  gasPrice :  web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+				from: signer.address,
+				nonce   : web3.utils.toHex(nounce),
+				gasLimit: 5000000,
+				value : 0,
+			    gasPrice :  web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
 			  })
 
 			  .once('sending', function(payload){ console.log(`Sending transaction ...`);
@@ -122,17 +112,19 @@ app.post("/createEntity", async(req, res) => {
 		{
 			return res.status(401).json({ message: "Missing Authorization Header" });
 		}
-	     const { contactList, signer } = getConfig(req.headers["app-config-token"]);
+		const { contactList, signer,web3 } = getConfig(req.headers["app-config-token"]);
 
 		app.use(express.json());
-
+		let nounce = await web3.eth.getTransactionCount(signer.address);
 	    const tokenURI = JSON.stringify(req.body);
 		try {
 		  const response = await contactList.methods.createEntity(tokenURI)
 			.send({
 				from: signer.address,
-                gasLimit: 5000000,
-				gasPrice: 100000000,
+				nonce   : web3.utils.toHex(nounce),
+				gasLimit: 5000000,
+				value : 0,
+			    gasPrice :  web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
 			  })
 
 			  .once('sending', function(payload){ console.log(`Sending transaction ...`);
@@ -210,22 +202,24 @@ app.post("/initiate-token-info", async (req, res) => {
 	{
 		return res.status(401).json({ message: "Missing Authorization Header" });
 	}
-	 const { contactList, signer } = getConfig(req.headers["app-config-token"]);
+	const { contactList, signer,web3 } = getConfig(req.headers["app-config-token"]);
     
 	if (!req.body) res.json("Please add body");
 	const tokenUID = req.query.token;
 	if (!tokenUID) res.json("Token id missing");
 	const tokenURI = JSON.stringify(req.body);
-	
+	let nounce = await web3.eth.getTransactionCount(signer.address);
 
 
 	try {
 	  const response = await contactList.methods
 		.addData(tokenUID, tokenURI)
 		.send({
-		  from: signer.address,
-		  gasLimit: 5000000,
-		  gasPrice: 100000000,
+			from: signer.address,
+			nonce   : web3.utils.toHex(nounce),
+			gasLimit: 5000000,
+			value : 0,
+			gasPrice :  web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
 		})
 		.once("transactionHash", (txhash) => {
 		  console.log(`Adding Token Info ...`);
@@ -276,7 +270,7 @@ app.get("/get-token-data", async (req, res) => {
 	{
 		return res.status(401).json({ message: "Missing Authorization Header" });
 	}
-	const { contactList, signer } = getConfig(req.headers["app-config-token"]);
+	const { contactList, signer,web3 } = getConfig(req.headers["app-config-token"]);
 	if (!req.body) res.json("Please add body");
   
 	const tokenUID = req?.query?.token;
@@ -295,13 +289,16 @@ app.get("/get-token-data", async (req, res) => {
 	}
   
 	const tokenURI = JSON.stringify(tokenData);
+	let nounce = await web3.eth.getTransactionCount(signer.address);
 	try {
 	  const response = await contactList.methods
 		.addData(tokenUID, tokenURI)
 		.send({
-		  from: signer.address,
-		  gasLimit: 5000000,
-		  gasPrice: 100000000,
+			from: signer.address,
+			nonce   : web3.utils.toHex(nounce),
+			gasLimit: 5000000,
+			value : 0,
+			gasPrice :  web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
 		})
 		.once("transactionHash", (txhash) => {
 		  console.log(`Adding transaction ...`);
@@ -326,7 +323,7 @@ app.get("/get-token-data", async (req, res) => {
 	{
 		return res.status(401).json({ message: "Missing Authorization Header" });
 	}
-	const { contactList, signer } = getConfig(req.headers["app-config-token"]);
+	const { contactList, signer,web3 } = getConfig(req.headers["app-config-token"]);
 	
 	if (!req.body) res.json("Please add body");
   
@@ -343,15 +340,17 @@ app.get("/get-token-data", async (req, res) => {
 	  const userdetails = [req.body];
 	  tokenData.userdetails = userdetails;
 	}
-  
+	let nounce = await web3.eth.getTransactionCount(signer.address);
 	const tokenURI = JSON.stringify(tokenData);
 	try {
 	  const response = await contactList.methods
 		.addData(tokenUID, tokenURI)
 		.send({
 			from: signer.address,
+			nonce   : web3.utils.toHex(nounce),
 			gasLimit: 5000000,
-			gasPrice: 100000000,
+			value : 0,
+			gasPrice :  web3.utils.toHex(web3.utils.toWei('20', 'gwei')),
 		})
 		.once("transactionHash", (txhash) => {
 		  console.log(`Minting transaction ...`);
@@ -368,8 +367,8 @@ app.get("/get-token-data", async (req, res) => {
 	}
   });
 
-  app.listen(process.env.PORT || 3080, () => {
-	console.log('listening on port '+ (process.env.PORT || 3080));
+  app.listen(process.env.PORT || 3082, () => {
+	console.log('listening on port '+ (process.env.PORT || 3082));
 	
 });
 
